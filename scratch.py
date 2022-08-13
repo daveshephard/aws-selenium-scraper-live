@@ -20,3 +20,7 @@ print('Page title:', doc.title.text)
 #find all the player links, all inks where class = page_index
 player_links = doc.find_all("a", string="players")
 print('Players links:', player_links)
+
+  #listing = listings[0]
+  #print('Model: ',listing_title.text)
+  #print('URL: ',url)

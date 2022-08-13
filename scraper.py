@@ -1,9 +1,10 @@
+import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
 #AUTONATION_START_LINK = 'https://www.pro-football-reference.com/players/'
-AUTONATION_START_LINK = 'https://www.autonation.com/cars-for-sale?cnd=new&pagesize=72'
+AUTONATION_START_LINK = 'https://www.autonation.com/cars-for-sale?cnd=new&pagesize=72&dst=100&zip=98155'
 
 def get_driver():
   chrome_options = Options()
@@ -13,23 +14,47 @@ def get_driver():
   driver = webdriver.Chrome(options=chrome_options)
   return driver
 
+def get_listings(driver):
+  driver.get(AUTONATION_START_LINK)
+  driver.implicitly_wait(30)
+  driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+  listings = driver.find_elements(By.XPATH, '//div[@class="tile-info"]')
+  return listings
+
+
+def parse_listing(listing):
+  
+  title =  listing.find_element(By.CLASS_NAME,"vehile-name")
+  url = title.find_element(By.TAG_NAME,"a").get_attribute('href')
+  
+  return {
+    'title': title.text,
+    'url': url
+  }
+  
+
 if __name__ == "__main__":
+  
   print('Creating driver')
   driver = get_driver()
   
-  print('Fetching the page')
-  driver.get(AUTONATION_START_LINK)
-  print('Page title',driver.title)
+  print('Fetching listings')
+  listings = get_listings(driver)
+  
+  print(f'Found {len(listings)} listings')
+  print('Parsing the links on the first page')
+  listings_data = [parse_listing(listing) for listing in listings]
+  
+  
+  print('Save the data to a CSV')
+  listings_df = pd.DataFrame(listings_data)
+  print(listings_df)
+  listings_df.to_csv('listings.csv')
 
-  print('Get the car links')
-  LISTING_A_CLASS = 'vehile-name'
-  listing_divs = driver.find_elements(By.CLASS_NAME, LISTING_A_CLASS)
-  print(f'Found {len(listing_divs)} listings')
 
-  listing_links = driver.find_elements(By.XPATH, '//a[contains(@href,"/cars/")]')
-  print(f'Found {len(listing_links)} links')
-  print(listing_links)
 
+
+  
 
 
 ##srp-tile-vehiclename-0
