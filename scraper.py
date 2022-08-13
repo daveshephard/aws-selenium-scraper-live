@@ -32,26 +32,32 @@ def parse_listing(listing):
     'url': url
   }
   
+def send_email():
+  pass
 
-if __name__ == "__main__":
   
-  print('Creating driver')
-  driver = get_driver()
+  #comment out lines = ctrl + /
   
-  print('Fetching listings')
-  listings = get_listings(driver)
+# if __name__ == "__main__":
   
-  print(f'Found {len(listings)} listings')
-  print('Parsing the links on the first page')
-  listings_data = [parse_listing(listing) for listing in listings]
+#   print('Creating driver')
+#   driver = get_driver()
+  
+#   print('Fetching listings')
+#   listings = get_listings(driver)
+  
+#   print(f'Found {len(listings)} listings')
+#   print('Parsing the links on the first page')
+#   listings_data = [parse_listing(listing) for listing in listings]
   
   
-  print('Save the data to a CSV')
-  listings_df = pd.DataFrame(listings_data)
-  print(listings_df)
-  listings_df.to_csv('listings.csv')
+#   print('Save the data to a CSV')
+#   listings_df = pd.DataFrame(listings_data)
+#   print(listings_df)
+#   listings_df.to_csv('listings.csv')
 
-
+print('Send an email with results')
+send_email()
 
 
   
