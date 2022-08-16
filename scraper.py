@@ -2,9 +2,16 @@ import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+import time
+import re
+import math
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 #AUTONATION_START_LINK = 'https://www.pro-football-reference.com/players/'
-AUTONATION_START_LINK = 'https://www.autonation.com/cars-for-sale?cnd=new&pagesize=72&dst=100&zip=98155'
+AUTONATION_START_LINK = 'https://www.autonation.com/cars-for-sale?cnd=new&pagesize=72&zip=30501&dst=200&mk=jeep'
+#AUTONATION_START_LINK = 'https://www.autonation.com/cars-for-sale?cnd=new&pagesize=72&zip=30501'
 
 def get_driver():
   chrome_options = Options()
@@ -14,13 +21,69 @@ def get_driver():
   driver = webdriver.Chrome(options=chrome_options)
   return driver
 
+def lazy_load_all_pages(driver):
+  
+  num_listings = 0  
+  driver.get(AUTONATION_START_LINK)  
+  driver.implicitly_wait(300)
+  time.sleep(5)
+
+  #//*[@id="cookieModal"]/div[3]/button
+  if driver.find_element(By.XPATH, '//*[@id="cookieModal"]/div[3]/button'):
+    print ('Element exists')
+    driver.find_element(By.XPATH, '//*[@id="cookieModal"]/div[3]/button').click()
+  
+    
+  try:
+    element = WebDriverWait(driver, 10).until(
+      EC.presence_of_element_located((By.XPATH, '//label[@id="lbl-srp-results-count-component"]')))
+    print("Page is ready!")
+  except TimeoutException:
+    print("Loading took too much time!")
+    
+  num_listings = driver.find_element(By.XPATH, '//label[@id="lbl-srp-results-count-component"]').get_attribute("innerText")
+  print(num_listings)
+  
+  num_listings = re.search('(([\d]+\,\d\d\d)|[\d]+)', num_listings).group()
+  print('new listings: ',num_listings)
+
+  if "," in num_listings:
+    print('comma')
+    num_listings = int(num_listings.replace(',', ''))
+    print (num_listings)
+  else:
+    print('no comma')
+    num_listings = int(num_listings)
+    print(num_listings)
+  
+  loops = math.ceil(int(num_listings)/72)
+  
+  print("inside: ",num_listings)
+  
+  for x in range(1,loops):
+    print("loop", x, " times")
+    #click //button[@class="btn secondary-cta an-cta"]  
+    
+    try:
+      WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.XPATH, '//button[@class="btn secondary-cta an-cta"]')))
+      driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+      print("Next button is ready!", x)
+      submit_button = driver.find_element(By.XPATH, '//button[@class="btn secondary-cta an-cta"]')
+      driver.execute_script("arguments[0].scrollIntoView();", submit_button)
+      driver.execute_script("arguments[0].click();", submit_button)
+      print('next button clicked', x)
+    
+    except TimeoutException:
+      print("Loading took too much time!")
+  
+  return(num_listings)
+
+
 def get_listings(driver):
-  driver.get(AUTONATION_START_LINK)
-  driver.implicitly_wait(30)
-  driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+  
   listings = driver.find_elements(By.XPATH, '//div[@class="tile-info"]')
   return listings
-
 
 def parse_listing(listing):
   
@@ -32,33 +95,24 @@ def parse_listing(listing):
     'url': url
   }
   
-def send_email():
-  pass
 
+if __name__ == "__main__":
   
-  #comment out lines = ctrl + /
+  print('Creating driver')
+  driver = get_driver()
+  lazy_load_all_pages(driver)
   
-# if __name__ == "__main__":
+  print('Fetching listings')
+  listings = get_listings(driver)
+  print(f'Found {len(listings)} listings')
+  print('Parsing the links on the first page')
   
-#   print('Creating driver')
-#   driver = get_driver()
-  
-#   print('Fetching listings')
-#   listings = get_listings(driver)
-  
-#   print(f'Found {len(listings)} listings')
-#   print('Parsing the links on the first page')
-#   listings_data = [parse_listing(listing) for listing in listings]
-  
-  
-#   print('Save the data to a CSV')
-#   listings_df = pd.DataFrame(listings_data)
-#   print(listings_df)
-#   listings_df.to_csv('listings.csv')
-
-print('Send an email with results')
-send_email()
-
+  listings_data = [parse_listing(listing) for listing in listings]
+  print('Save the data to a data frame')
+  listings_df = pd.DataFrame(listings_data)
+  print(listings_df)
+ 
+# listings_df.to_csv('listings.csv')
 
   
 
